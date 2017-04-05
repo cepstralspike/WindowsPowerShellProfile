@@ -2,14 +2,13 @@
 $GLOBAL:ErrorActionPreference = "Inquire"
 $GLOBAL:DebugPreference = "Inquire"
 
-$d  = "c:\users"
-$n  = $env:username
-$m  = "$d\$n\powershell\pShellMain.psm1"
+$h1 = $ENV:USERPROFILE
+$m1 = "$h1\powershell\pShellMain.psm1"
 
 $GLOBAL:ACTIVATE_PROMPT = $null
-if ( test-path $m -PathType leaf ) {
-#   $GLOBAL:profilem = $m
-#   import-Module $m
+if ( test-path $m1 -PathType leaf ) {
+#   $GLOBAL:profilem = $m1
+#   import-Module $m1
 }
 #$GLOBAL:ACTIVATE_PROMPT = $true
 Set-StrictMode -Version Latest
@@ -116,6 +115,8 @@ $GLOBAL:psDiaryRecent                 = $null
 $GLOBAL:psDiaryXmlFile                = $null
 $GLOBAL:psDiaryTxtFile                = $null
 $GLOBAL:psChronicleFile               = $null
+$GLOBAL:ps1Dir                        = $null
+$GLOBAL:psm1Dir                       = $null
 $GLOBAL:sundryLclD                    = $null
 $GLOBAL:sundryNetD                    = $null
 $GLOBAL:sundryTmpD                    = $null
@@ -430,6 +431,7 @@ Set-Alias   -scope global -name   rr            -value   "InvokeDiaryCommand"   
 Set-Alias   -scope global -name   r             -value   "InvokeDiaryCommand"   -force -Option Allscope
 Set-Alias   -scope global -name   h             -value   "__displayDiary"       -force -Option Allscope
 Set-Alias   -scope global -name   xxr           -value   "ForbidDiaryCommand"   -force -Option Allscope
+Remove-Item alias:ls
 #
 # }}}
 # =========================================================================
@@ -2007,6 +2009,7 @@ function loadDiary { # {{{
 
 function saveDiary { # {{{
     $xmltmpfile = $psDiaryLclD + '/' + $(usrHostTStampPid) + ".xml"
+    $xmltmpbase = $psDiaryLclD + '/' + $(usrHostTStampPid)
     Export-Clixml -Path $xmltmpfile -InputObject $diary
     Copy-Item $xmltmpfile $psDiaryXmlFile
     $xpression = "$bzipexe $xmltmpfile"
@@ -3532,7 +3535,7 @@ function drecall { # {{{
 } # }}}
 
 function dwin { # {{{
-    vvr $psDiaryTxtFile
+    vvvr $psDiaryTxtFile
 } # }}}
 
 function reboot { # {{{
@@ -5224,6 +5227,8 @@ else {
 mststampInit
 initBigRegexGBLS
 
+$GLOBAL:psm1Dir = "$ENV:USERPROFILE/powershell"
+$GLOBAL:ps1Dir  = "C:/doc/WindowsPowerShell"
 $GLOBAL:initialDirectory = $ENV:USERPROFILE
 $GLOBAL:etcDirectory = "c:/etc"
 if ( -not ( Test-path -path $GLOBAL:etcDirectory -PathType container ) ) {
@@ -5294,12 +5299,6 @@ $GLOBAL:chronicalDirectoryMatrix = (
     ( $psDiaryArchive  ,   "LOADING ARCHIVE ENTRIES..."     ),
     ( $psDiaryRecent   ,   "LOADING RECENT ENTRIES..."      )
 )
-if ( -not ( Test-Path -path $psDiaryXmlFile -PathType Leaf ) )
-{ # {{{
-    generateDiary
-} # }}}
-loadAllSavedCommands
-
 # These definitions make git console work
 # but break other important things
 # Define these at you own risk
@@ -5529,4 +5528,11 @@ ePlant PYTHONIOENCODING 'utf-8'
 ePlant pathext "$env:pathext;.PL;.PY"
 $dstack = @{}
 setdir $GLOBAL:mmm
+
+if ( -not ( Test-Path -path $psDiaryXmlFile -PathType Leaf ) )
+{ # {{{
+    generateDiary
+} # }}}
+loadAllSavedCommands
+
 $GLOBAL:ACTIVATE_PROMPT = $true
