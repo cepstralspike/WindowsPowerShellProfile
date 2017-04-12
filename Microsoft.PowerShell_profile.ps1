@@ -2293,12 +2293,13 @@ function generateDiary { # {{{
         # Gather commands and execution times into an ordinary array
         # because I want to leave as little as possible to chance.
         #
+        $xml2import = $_
         try {
-            $histobj = import-clixml $_
+            $histobj = import-clixml $xml2import
             $diaryRecord = [pscustomobject]@{
                          stamp = $histobj.StartExecutionTime.ticks.tostring()
                    commandline = $histobj.commandline
-                        origin = $_.name
+                        origin = $xml2import.name
             }
             if ( $diaryRecord.commandline -match $dontkeepthese )
             { # {{{
@@ -2316,7 +2317,9 @@ function generateDiary { # {{{
             } # }}}
         }
         catch {
-            $msg = "OUCH:<generateDiary>[ $_.fullname ] "
+            $msg = "OUCH:<generateDiary>[ "
+            $msg += $xml2import.fullname
+            $msg += " ] "
             $msg += "APPEARS TO HAVE A PROBLEM"
             Write-Host
             Write-Host -ForegroundColor Red $msg
