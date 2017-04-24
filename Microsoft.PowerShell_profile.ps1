@@ -528,7 +528,7 @@ function initBigRegexGBLS { # {{{
       $fullRE  = @()
       $fullRE += '(?x:   \A \s* Path \s* [-]+   \s* '     + $pfxRe + ' (?x: (.+?) \s* \z) )'
       $fullRE += '(?x:   \A \s* '                         + $pfxRe + ' (?x: (.+?) \s* \z) )'
-      $fullRE += '(?x:   \A System.String \s+   PSPath= ' + $pfxRe + ' (?x: (.+?) \s* \z) )'
+      $fullRE += '(?ix:   \A (?x: System [.] )? String \s+   PSPath= ' + $pfxRe + ' (?x: (.+?) \s* \z) )'
       $fullRE += '(?six: \A ( (Env) | (variable) | (HKLM) | (HKCU) ) : )'
 
       $GLOBAL:getLocationRE           =  [regex]   $fullRE[   0  ]
@@ -2059,7 +2059,7 @@ function dumpDiarySlowly { # {{{
         Write-Output $line | Out-File -FilePath $txttmpfile -Append -Encoding UTF8
         if ( 0 -eq $lineCount % 512 )
         { # {{{
-            write-Host -ForegroundColor DarkMagenta "line count: $lineCount"
+            write-Host -ForegroundColor Green "line count: $lineCount"
         } # }}}
     } # }}}
     $m = $nullstr
@@ -2085,7 +2085,7 @@ function generateChronicle { # {{{
     $whereIwuz = get-location
     $GLOBAL:chronicle  = New-Object System.Collections.ArrayList
     write-host $nullstr
-    write-Host -ForegroundColor DarkMagenta "BEGINNING HARVEST..."
+    write-Host -ForegroundColor Green "BEGINNING HARVEST..."
     $harvestCount = 0
     $subtotal = 0
     foreach ( $MatrixRow in $chronicalDirectoryMatrix ) {
@@ -2093,8 +2093,8 @@ function generateChronicle { # {{{
         $SourceDir = $MatrixRow[0]
         $messageTxt = $MatrixRow[1]
         write-host $nullstr
-        write-Host -ForegroundColor DarkMagenta $SourceDir
-        write-Host -ForegroundColor DarkMagenta $messageTxt
+        write-Host -ForegroundColor Green $SourceDir
+        write-Host -ForegroundColor Green $messageTxt
         write-host $nullstr
         set-Location  $SourceDir
         Get-ChildItem *.pshcmd.xml | %{ # {{{
@@ -2125,8 +2125,8 @@ function generateChronicle { # {{{
     #
     # save chronicle to xml
     #
-    #write-Host -ForegroundColor DarkMagenta "SORTING AND SAVING CHRONICLE XML FILE"
-    write-Host -ForegroundColor DarkMagenta "SAVING CHRONICLE XML FILE"
+    #write-Host -ForegroundColor Green "SORTING AND SAVING CHRONICLE XML FILE"
+    write-Host -ForegroundColor Green "SAVING CHRONICLE XML FILE"
     $xmltmpfile = $psDiaryLclD + '/' + $(usrHostTStampPid) + ".chronicle.xml"
     #$GLOBAL:chronicle | sort-object -property StartExecutionTime | Export-Clixml -Path $xmltmpfile
     Export-Clixml -Path $xmltmpfile -InputObject $GLOBAL:chronicle
@@ -2145,13 +2145,13 @@ function reGenerateDiary { # {{{
     $originalCount = $diary.count
     $GLOBAL:diary = @()
     write-host $nullstr
-    write-Host -ForegroundColor DarkMagenta "BEGINNING HARVEST..."
+    write-Host -ForegroundColor Green "BEGINNING HARVEST..."
     write-host $nullstr
-    write-Host -ForegroundColor DarkMagenta "ORIGINAL COUNT IS $originalCount"
+    write-Host -ForegroundColor Green "ORIGINAL COUNT IS $originalCount"
     write-host $nullstr
     $harvestCount = 0
     write-host $nullstr
-    write-Host -ForegroundColor DarkMagenta "LOADING ARCHIVE ENTRIES..."
+    write-Host -ForegroundColor Green "LOADING ARCHIVE ENTRIES..."
     write-host $nullstr
     set-Location  $psDiaryArchive
     Get-ChildItem *.pshcmd.xml | %{ # {{{
@@ -2178,11 +2178,11 @@ function reGenerateDiary { # {{{
         $harvestCount += 1
         if ( 0 -eq $harvestCount % 512 )
         { # {{{
-            write-Host -ForegroundColor DarkMagenta "harvest count: $harvestCount"
+            write-Host -ForegroundColor Green "harvest count: $harvestCount"
         } # }}}
     } # }}}
     write-host $nullstr
-    write-Host -ForegroundColor DarkMagenta "LOADING RECENT ENTRIES..."
+    write-Host -ForegroundColor Green "LOADING RECENT ENTRIES..."
     write-host $nullstr
     set-Location  $psDiaryRecent
     Get-ChildItem *.pshcmd.xml | %{ # {{{
@@ -2201,7 +2201,7 @@ function reGenerateDiary { # {{{
             $harvestCount += 1
             if ( 0 -eq $harvestCount % 512 )
             { # {{{
-                write-Host -ForegroundColor DarkMagenta "harvest count: $harvestCount"
+                write-Host -ForegroundColor Green "harvest count: $harvestCount"
             } # }}}
         }
         catch {
@@ -2220,7 +2220,7 @@ function reGenerateDiary { # {{{
     # Sort by execution time
     #
     write-host $nullstr
-    write-Host -ForegroundColor DarkMagenta "BEGINNING SORT/CULL..."
+    write-Host -ForegroundColor Green "BEGINNING SORT/CULL..."
     foreach( $diaryRecord in $raw | sort-object -property stamp )
     { # {{{
         #
@@ -2249,24 +2249,24 @@ function reGenerateDiary { # {{{
     #
     # dump array to flatfile
     #
-    #write-Host -ForegroundColor DarkMagenta "...SORT COMPLETE"
+    #write-Host -ForegroundColor Green "...SORT COMPLETE"
     #write-host $nullstr
-    #write-Host -ForegroundColor DarkMagenta "DUMPING DIARY TEXT FILE"
+    #write-Host -ForegroundColor Green "DUMPING DIARY TEXT FILE"
     #dumpDiary
     #
     # save diary to xml
     #
-    #write-Host -ForegroundColor DarkMagenta "SAVING DIARY XML FILE"
+    #write-Host -ForegroundColor Green "SAVING DIARY XML FILE"
     #saveDiary
     #if ( $originalCount -gt 0 ) {
     #    $dupcount = $originalCount - $diary.count
     #    if ( $dupcount -gt 0 ) {
-    #        write-Host -ForegroundColor DarkMagenta "$dupcount DUPLICATES ELIMINATED SINCE LAST GENERATION"
+    #        write-Host -ForegroundColor Green "$dupcount DUPLICATES ELIMINATED SINCE LAST GENERATION"
     #        write-host $nullstr
     #    }
     #}
     #$dupcount = $harvestCount - $diary.count
-    #write-Host -ForegroundColor DarkMagenta "$dupcount DUPLICATES EXIST IN THE ARCHIVE"
+    #write-Host -ForegroundColor Green "$dupcount DUPLICATES EXIST IN THE ARCHIVE"
     #write-host $nullstr
 } # }}}
 
@@ -2279,13 +2279,13 @@ function generateDiary { # {{{
     $GLOBAL:diary = @()
     $dontkeepthese = [regex] '(?six: \A xxr \s )'
     write-host $nullstr
-    write-Host -ForegroundColor DarkMagenta "BEGINNING HARVEST..."
+    write-Host -ForegroundColor Green "BEGINNING HARVEST..."
     write-host $nullstr
-    write-Host -ForegroundColor DarkMagenta "ORIGINAL COUNT IS $originalCount"
+    write-Host -ForegroundColor Green "ORIGINAL COUNT IS $originalCount"
     write-host $nullstr
     $harvestCount = 0
     write-host $nullstr
-    write-Host -ForegroundColor DarkMagenta "LOADING ARCHIVE ENTRIES..."
+    write-Host -ForegroundColor Green "LOADING ARCHIVE ENTRIES..."
     write-host $nullstr
     set-Location  $psDiaryArchive
     Get-ChildItem *.pshcmd.xml | %{ # {{{
@@ -2313,7 +2313,7 @@ function generateDiary { # {{{
             $harvestCount += 1
             if ( 0 -eq $harvestCount % 512 )
             { # {{{
-                write-Host -ForegroundColor DarkMagenta "harvest count: $harvestCount"
+                write-Host -ForegroundColor Green "harvest count: $harvestCount"
             } # }}}
         }
         catch {
@@ -2327,7 +2327,7 @@ function generateDiary { # {{{
         }
     } # }}}
     write-host $nullstr
-    write-Host -ForegroundColor DarkMagenta "LOADING RECENT ENTRIES..."
+    write-Host -ForegroundColor Green "LOADING RECENT ENTRIES..."
     write-host $nullstr
     set-Location  $psDiaryRecent
     Get-ChildItem *.pshcmd.xml | %{ # {{{
@@ -2355,7 +2355,7 @@ function generateDiary { # {{{
             $harvestCount += 1
             if ( 0 -eq $harvestCount % 512 )
             { # {{{
-                write-Host -ForegroundColor DarkMagenta "harvest count: $harvestCount"
+                write-Host -ForegroundColor Green "harvest count: $harvestCount"
             } # }}}
         }
         catch {
@@ -2374,7 +2374,7 @@ function generateDiary { # {{{
     # Sort by execution time
     #
     write-host $nullstr
-    write-Host -ForegroundColor DarkMagenta "BEGINNING SORT/CULL..."
+    write-Host -ForegroundColor Green "BEGINNING SORT/CULL..."
     foreach( $diaryRecord in $raw | sort-object -property stamp )
     { # {{{
         #
@@ -2417,24 +2417,24 @@ function generateDiary { # {{{
     #
     # dump array to flatfile
     #
-    write-Host -ForegroundColor DarkMagenta "...SORT COMPLETE"
+    write-Host -ForegroundColor Green "...SORT COMPLETE"
     write-host $nullstr
-    write-Host -ForegroundColor DarkMagenta "DUMPING DIARY TEXT FILE"
+    write-Host -ForegroundColor Green "DUMPING DIARY TEXT FILE"
     dumpDiary
     #
     # save diary to xml
     #
-    write-Host -ForegroundColor DarkMagenta "SAVING DIARY XML FILE"
+    write-Host -ForegroundColor Green "SAVING DIARY XML FILE"
     saveDiary
     if ( $originalCount -gt 0 ) {
         $dupcount = $originalCount - $diary.count
         if ( $dupcount -gt 0 ) {
-            write-Host -ForegroundColor DarkMagenta "$dupcount DUPLICATES ELIMINATED SINCE LAST GENERATION"
+            write-Host -ForegroundColor Green "$dupcount DUPLICATES ELIMINATED SINCE LAST GENERATION"
             write-host $nullstr
         }
     }
     $dupcount = $harvestCount - $diary.count
-    write-Host -ForegroundColor DarkMagenta "$dupcount DUPLICATES EXIST IN THE ARCHIVE"
+    write-Host -ForegroundColor Green "$dupcount DUPLICATES EXIST IN THE ARCHIVE"
     write-host $nullstr
 
 
@@ -3567,7 +3567,7 @@ function clenv1 { # {{{
     }
     $GLOBAL:consoleTitleMode = 'ClEnvPath'
     $RawUI = (get-host).UI.RawUI
-    $RawUI.backgroundcolor = 'DarkMagenta'
+    $RawUI.backgroundcolor = 'Green'
     SetConsolewindowTitle
     clear-Host
 
@@ -3655,7 +3655,7 @@ function clenv { # {{{
     clpath
     $GLOBAL:consoleTitleMode = 'ClEnvPath'
     $RawUI = (get-host).UI.RawUI
-    $RawUI.backgroundcolor = 'DarkMagenta'
+    $RawUI.backgroundcolor = 'Green'
     SetConsolewindowTitle
     clear-Host
     Invoke-Expression $bin/jetbrains/CLion1.2.4/bin/clion64.exe
@@ -3821,7 +3821,7 @@ function vsenv { # {{{
     ePlant consoleTitleMode 'ClEnvPath'
 
     $RawUI = (get-host).UI.RawUI
-    $RawUI.backgroundcolor = 'DarkMagenta'
+    $RawUI.backgroundcolor = 'Green'
     SetConsolewindowTitle
     clear-Host
 
