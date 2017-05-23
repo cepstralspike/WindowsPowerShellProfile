@@ -134,8 +134,6 @@ $GLOBAL:eclipseimage                  = $null
 $GLOBAL:eclipsevm                     = $null
 $GLOBAL:eclipsevmexe                  = $null
 $GLOBAL:expiredFiles                  = $null
-$GLOBAL:ekd                           = $null
-$GLOBAL:ekdL                          = $null
 $GLOBAL:fileServer                    = $null
 $GLOBAL:getLocationRE                 = $null
 $GLOBAL:getLongNameRE                 = $null
@@ -158,8 +156,6 @@ $GLOBAL:include                       = $null
 $GLOBAL:includeL                      = $null
 $GLOBAL:initialDirectory              = $null
 $GLOBAL:etcDirectory                  = $null
-$GLOBAL:j7d                           = $null
-$GLOBAL:j7dL                          = $null
 $GLOBAL:lib                           = $null
 $GLOBAL:libL                          = $null
 $GLOBAL:libpath                       = $null
@@ -214,8 +210,6 @@ $GLOBAL:vimBk                         = $null
 $GLOBAL:vimBkL                        = $null
 $GLOBAL:vimBackupDir                  = $null
 $GLOBAL:vimBackupDirL                 = $null
-$GLOBAL:vimLcl                        = $null
-$GLOBAL:vimLclL                       = $null
 $GLOBAL:vimprofile                    = $null
 $GLOBAL:vimprofileL                   = $null
 $GLOBAL:vimProfileDir                 = $null
@@ -234,13 +228,12 @@ $GLOBAL:dbxL                          = $null
 $GLOBAL:loh                           = $null
 $GLOBAL:lohL                          = $null
 $GLOBAL:JAVA_HOME                     = $null
-$GLOBAL:JRE_H0ME                      = $null
-$GLOBAL:JAVA_HOME                     = $null
+$GLOBAL:JRE_HOME                      = $null
+$GLOBAL:CLASSPATH                     = $null
 $GLOBAL:JRE8_64                       = $null
 $GLOBAL:JRE7_64                       = $null
 $GLOBAL:ECLIPSE_HOME                  = $null
 $GLOBAL:SMARTGIT_JAVA_HOME            = $null
-$GLOBAL:ekd                           = $null
 $GLOBAL:adb                           = $null
 $GLOBAL:xbn                           = $null
 $GLOBAL:adhL                          = $null
@@ -431,6 +424,7 @@ Set-Alias   -scope global -name   rr            -value   "InvokeDiaryCommand"   
 Set-Alias   -scope global -name   r             -value   "InvokeDiaryCommand"   -force -Option Allscope
 Set-Alias   -scope global -name   h             -value   "__displayDiary"       -force -Option Allscope
 Set-Alias   -scope global -name   xxr           -value   "ForbidDiaryCommand"   -force -Option Allscope
+Set-Alias   -scope global -name   ij            -value   "C:/bin/JetBrains/IntelliJ.IDEA2017.1.1/bin/idea64.exe" -force -Option Allscope
 Remove-Item alias:ls
 #
 # }}}
@@ -1753,7 +1747,7 @@ function H_T_Proxy { # {{{
         #
         # the trick below is the only way I found to extract
         # all the meaningful data from the call stack without
-        # dumping it out to a fiie and re-parsing it.
+        # dumping it out to a file and re-parsing it.
         #
         $oCallStack = Get-PSCallStack | Format-List | Out-String
         # $oCallStack
@@ -2079,8 +2073,9 @@ function saveSomeDiaryCommand { # {{{
 
 function generateChronicle { # {{{
     #
-    # Create an array of native history records and
-    # save it to xml
+    # CREATE AN ARRAY OF *ALL* NATIVE HISTORY RECORDS 
+    # REGARDLESS OF WHETHER OR NOT THEY ARE ANATHEMA
+    # OR DUPLICATES. SAVE IT TO XML
     #
     $whereIwuz = get-location
     $GLOBAL:chronicle  = New-Object System.Collections.ArrayList
@@ -2138,137 +2133,6 @@ function generateChronicle { # {{{
     Copy-Item $xmltmpfile $psChronicleFile
 } # }}}
 
-function reGenerateDiary { # {{{
-    $whereIwuz = get-location
-    $uniq = @{}
-    $raw = New-Object System.Collections.ArrayList
-    $originalCount = $diary.count
-    $GLOBAL:diary = @()
-    write-host $nullstr
-    write-Host -ForegroundColor Green "BEGINNING HARVEST..."
-    write-host $nullstr
-    write-Host -ForegroundColor Green "ORIGINAL COUNT IS $originalCount"
-    write-host $nullstr
-    $harvestCount = 0
-    write-host $nullstr
-    write-Host -ForegroundColor Green "LOADING ARCHIVE ENTRIES..."
-    write-host $nullstr
-    set-Location  $psDiaryArchive
-    Get-ChildItem *.pshcmd.xml | %{ # {{{
-        #
-        # Gather commands and execution times into an ordinary array
-        # because I want to leave as little as possible to chance.
-        #
-        try {
-            $histobj = import-clixml $_
-            $diaryRecord = [pscustomobject]@{
-                         stamp = $histobj.StartExecutionTime.ticks.tostring()
-                   commandline = $histobj.commandline
-                        origin = $_.name
-            }
-            $null = $raw.add( $diaryRecord )
-        }
-        catch {
-            $msg = "OUCH:<reGenerateDiary>[ $_.fullname ] "
-            $msg += "APPEARS TO HAVE A PROBLEM"
-            Write-Host
-            Write-Host -ForegroundColor Red $msg
-            Write-Host
-        }
-        $harvestCount += 1
-        if ( 0 -eq $harvestCount % 512 )
-        { # {{{
-            write-Host -ForegroundColor Green "harvest count: $harvestCount"
-        } # }}}
-    } # }}}
-    write-host $nullstr
-    write-Host -ForegroundColor Green "LOADING RECENT ENTRIES..."
-    write-host $nullstr
-    set-Location  $psDiaryRecent
-    Get-ChildItem *.pshcmd.xml | %{ # {{{
-        #
-        # Gather commands that have been executed since the last
-        # time the diary was regenerated.
-        #
-        try {
-            $histobj = import-clixml $_
-            $diaryRecord = [pscustomobject]@{
-                         stamp = $histobj.StartExecutionTime.ticks.tostring()
-                   commandline = $histobj.commandline
-                        origin = $_.name
-            }
-            $null = $raw.add( $diaryRecord )
-            $harvestCount += 1
-            if ( 0 -eq $harvestCount % 512 )
-            { # {{{
-                write-Host -ForegroundColor Green "harvest count: $harvestCount"
-            } # }}}
-        }
-        catch {
-            $msg = "OUCH:<generateChronicle>[ $_.fullname ] "
-            $msg += "APPEARS TO HAVE A PROBLEM"
-            Write-Host
-            Write-Host -ForegroundColor Red $msg
-            Write-Host
-        }
-    } # }}}
-    if ( Test-Path -path $psDiaryArchive -PathType container ) {
-        Move-Item *.pshcmd.xml $psDiaryArchive
-    }
-    set-Location $whereIwuz
-    #
-    # Sort by execution time
-    #
-    write-host $nullstr
-    write-Host -ForegroundColor Green "BEGINNING SORT/CULL..."
-    foreach( $diaryRecord in $raw | sort-object -property stamp )
-    { # {{{
-        #
-        # Now get weed out the duplicate commands
-        # since they are sorted the newest duplicate
-        # will be in the diary at the relative
-        # position where it was last invoked
-        #
-        $uniq[ $diaryRecord.commandline ] = $diaryRecord
-    } # }}}
-    $raw = New-Object System.Collections.ArrayList
-    $pattern = "(?six:  $cReturn \z)";
-    foreach( $command in $uniq.keys )
-    { # {{{
-        #
-        # put the permanent data in a simple array
-        #
-        $null = $raw.add( $uniq[ $command ] )
-    } # }}}
-    $uniq = @{}  # release the memory
-    #
-    # Put array in chronological order
-    #
-    $cooked = $raw | sort-object -Property stamp
-    $GLOBAL:diary = $GLOBAL:diary  | sort-object -Property stamp
-    #
-    # dump array to flatfile
-    #
-    #write-Host -ForegroundColor Green "...SORT COMPLETE"
-    #write-host $nullstr
-    #write-Host -ForegroundColor Green "DUMPING DIARY TEXT FILE"
-    #dumpDiary
-    #
-    # save diary to xml
-    #
-    #write-Host -ForegroundColor Green "SAVING DIARY XML FILE"
-    #saveDiary
-    #if ( $originalCount -gt 0 ) {
-    #    $dupcount = $originalCount - $diary.count
-    #    if ( $dupcount -gt 0 ) {
-    #        write-Host -ForegroundColor Green "$dupcount DUPLICATES ELIMINATED SINCE LAST GENERATION"
-    #        write-host $nullstr
-    #    }
-    #}
-    #$dupcount = $harvestCount - $diary.count
-    #write-Host -ForegroundColor Green "$dupcount DUPLICATES EXIST IN THE ARCHIVE"
-    #write-host $nullstr
-} # }}}
 
 function generateDiary { # {{{
     $whereIwuz = get-location
@@ -3184,12 +3048,6 @@ function vimfallback { # {{{
     }
 } # }}}
 
-function cqjava { # {{{
-    $exe2run = shortname $pfdL/IBM/RationalSDLC/common/JAVA5.0/jre/bin/java.exe
-    $expression2invoke = $exe2run + $space + $args
-    . $exe2run $args
-} # }}}
-
 function starteclipse { # {{{
     if ( Test-Path -path $eclipseimage -PathType leaf ) {
         $originalLocation = $PWD
@@ -3613,8 +3471,6 @@ function clpath { # {{{
     $bin/jdk1.8.0.40/bin
     $abwL/eclipse
     $abwL/sdk/platform-tools
-    $j7d
-    $ekd
     $pfdL/firefox
     $spc/bin
     $sby/bin
@@ -5023,8 +4879,6 @@ function pkpath { # {{{
     $bin/jdk1.8.0.40/bin
     $abwL/eclipse
     $abwL/sdk/platform-tools
-    $j7d
-    $ekd
     $pfdL/firefox
     $spc/bin
     $sby/bin
@@ -5488,8 +5342,6 @@ sow sqlite  "C:/sqlite"
 sow bin     "C:/bin"
 sow din     "C:/users/ksk/bin"
 sow pyd     "C:/Py35"
-sow j7d     "C:/jdk7/w64/bin"
-sow ekd     "C:/eklypz/w64"
 sow dyd     "C:/Android/android-sdk"
 sow abw     "C:/adt-bundle-windows-x86_64-20130219"
 sow xbn     "C:/system/xbin"
@@ -5502,13 +5354,11 @@ $ENV:dbx = $dbxL
 
 switch -regex ( $localhost ) { # {{{
   '(?six: \A (FultonJSheen) | (Desales) | (Azariah) | (Magdalene) \z )' {
-    #sow vimLcl ( ,"$homeLclDsk/nomad" )
     sow VIM "$homeLclDsk/bin/vim"
     sow VIMRUNTIME "$VIM/$vimVersion"
   }
 
   default {
-    #sow VIMLCL ( ,"$homeLcl" )
     sow VIM "$pfd/Vim"
     sow VIMRUNTIME "$VIM/$vimVersion"
   }
@@ -5521,27 +5371,22 @@ $GLOBAL:gooeyvimexe = bs2s "$VIM/$vimVersion/gvim.exe"
 $GLOBAL:gooeyvim = bs2s "$gooeyvimexe -u $vimprofile"
 $GLOBAL:crunchyvimexe = bs2s "$VIM/$vimVersion/vim.exe"
 $GLOBAL:crunchyvim = bs2s "$crunchyvimexe -u $vimprofile"
-$GLOBAL:eclipseimage = shortnamequiet "$pfdL/Eclipse3.6.1/Eclipse.exe"
-$GLOBAL:eclipsevmexe = shortnamequiet "$pfxL/java/jdkl.6.0_18/jre/bin/javaw.exe"
-$GLOBAL:eclipsevm = $eclipsevmexe -replace '[.]exe$', $nullstr
-$GLOBAL:eclipseDir = shortnamequiet "$pfdL/Eclipse3.6.1"
 $GLOBAL:bzipexe = shortnamequiet "$git/bzip2.exe"
 
 ePlant git_editor $gooeyvimexe
 
-sow JAVA_HOME ( "$bin/jdk1.8.0.40/jre", "$env:systemdrive/jdk7/w64/jre7" )
-sow JRE_H0ME  "$JAVA_HOME"
-sow JRE8_64   "$bin/jdk1.8.0.40/jre"
-sow JRE7_64   "$env:systemdrive/jdk7/w64/jre7"
-sow JRE7_32   "$env:systemdrive/jdk7/w32/jre7"
-sow ECLIPSE_HOME "$ekd"
+sow JAVA_HOME "$bin/jdk1.8.0_131"
+sow JRE_HOME  "$JAVA_HOME/jre"
+sow CLASSPATH $(sunder "$JAVA_HOME/lib;$JRE_HOME/lib")
+sow JRE8_64   $JRE_HOME
 sow SMARTGIT_JAVA_HOME "$JAVA_HOME"
 
 initiateTranscript $transcriptdir
 ssinit
 
 Register-EngineEvent PowerShell.Exiting {
-# Powershell_Exit_Processing
+    # Powershell_Exit_Processing Make sure that
+    # anything you put here runs quickly
 } -SupportEvent
 
 
