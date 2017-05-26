@@ -2141,14 +2141,6 @@ function generateDiary { # {{{
     $duplicates = New-Object System.Collections.ArrayList
     $originalCount = $diary.count
     $GLOBAL:diary = @()
-    #
-    # xxr is a way to remove troublesome commands
-    # from the diary. it is an alias to call 
-    # ForbidDiaryCommand. I can`t think of any
-    # reason that I would want to keep anathema 
-    # pronunciations in my diary. So I treat them as
-    # duplicates.
-    #
     $dontkeepthese = [regex] '(?six: \A xxr \s )'
     write-host $nullstr
     write-Host -ForegroundColor Green "BEGINNING HARVEST..."
@@ -2274,28 +2266,14 @@ function generateDiary { # {{{
     $GLOBAL:diary =  $uniq.values | sort-object -Property stamp
     $duplicates | %{
         $originName = $_ -replace ".*[/\\]", ""
-        foreach ( $prefix in $psDiaryRecent, $psDiaryArchive ) {
-            $originFullName = "$prefix/$originName"
+        $originFullName = "$psDiaryRecent/$_"
+        if ( Test-Path -path $originFullName -PathType leaf ) {
+            move-item $originFullName $psDiaryTwins
+        }
+        else {
+            $originFullName = "$psDiaryArchive/$_"
             if ( Test-Path -path $originFullName -PathType leaf ) {
-                #
-                # Move duplicate from where it is now to twins
-                #
-                $GLOBAL:ErrorActionPreference = "SilentlyContinue"
-                $GLOBAL:DebugPreference = "SilentlyContinue"
-                try {
-                    move-item $originFullName $psDiaryTwins
-                }
-                catch {
-                    $msg = "OUCH:<generateDiary>[ "
-                    $msg += "move-item $originFullName $psDiaryTwins"
-                    $msg += " ] "
-                    $msg += "APPEARS TO CAUSE A PROBLEM"
-                    Write-Host
-                    Write-Host -ForegroundColor Red $msg
-                    Write-Host
-                }
-                $GLOBAL:ErrorActionPreference = "Inquire"
-                $GLOBAL:DebugPreference = "Inquire"
+                move-item $originFullName $psDiaryTwins
             }
         }
     }
