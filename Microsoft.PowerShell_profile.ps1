@@ -4772,9 +4772,9 @@ function pathadd { # {{{
                 write-Output $nullstr
                 break out
             }
-            $currentPathArray += $inpArg
-            sow PATH $currentPathArray
         }
+        $currentPathArray += $inpArg
+        sow PATH $currentPathArray
     } until ( $true )
 } # }}}
 
