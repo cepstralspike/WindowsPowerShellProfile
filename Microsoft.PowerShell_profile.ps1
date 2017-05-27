@@ -1297,6 +1297,17 @@ function sow { # {{{
     # clean up the entries in the array and skip the ones that are
     # commented out ( start with # )
     #
+    if ( 1 -gt $args.count ) {
+        $m = @()
+        $m+= $newline
+        $m+= "OUCH<sow>:[ sow ]"
+        $m+= $newline
+        $m+= 'USAGE: [ sow tag value ]'
+        $m+= $newline
+        $errusage = $m -join $newline
+        Write-Host -Foregroundcolor Red $errusage
+        return
+    }
     $tag = $args[0]                                 #  1st Argument
     $tag = $tag  -replace  $leadingWS,  $nullstr    #  trim  leading white space
     $tag = $tag  -replace  $trailingWS, $nullstr    #  trim  trailing white space
@@ -1305,6 +1316,15 @@ function sow { # {{{
     # the desired types (Array|String) the introspection in
     # posh aint great but it is better than nothing.
     #
+    if ( 2 -gt $args.count ) {
+        $args = (, $args[0], "")
+    }
+    else {
+        if ( !$args[1] ) {
+            $args[1] = ""
+        } 
+    }
+    
     $argType = $($args[1].psobject.typenames | where {$_ -match $sowTypeAllowed})
     if ( "System.String" -eq $argType ) {
         $pathArray = (, $args[1])
