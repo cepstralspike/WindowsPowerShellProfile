@@ -134,6 +134,8 @@ $GLOBAL:eclipseimage                  = $null
 $GLOBAL:eclipsevm                     = $null
 $GLOBAL:eclipsevmexe                  = $null
 $GLOBAL:expiredFiles                  = $null
+$GLOBAL:ekd                           = $null
+$GLOBAL:ekdL                          = $null
 $GLOBAL:fileServer                    = $null
 $GLOBAL:getLocationRE                 = $null
 $GLOBAL:getLongNameRE                 = $null
@@ -156,6 +158,8 @@ $GLOBAL:include                       = $null
 $GLOBAL:includeL                      = $null
 $GLOBAL:initialDirectory              = $null
 $GLOBAL:etcDirectory                  = $null
+$GLOBAL:j7d                           = $null
+$GLOBAL:j7dL                          = $null
 $GLOBAL:lib                           = $null
 $GLOBAL:libL                          = $null
 $GLOBAL:libpath                       = $null
@@ -210,6 +214,8 @@ $GLOBAL:vimBk                         = $null
 $GLOBAL:vimBkL                        = $null
 $GLOBAL:vimBackupDir                  = $null
 $GLOBAL:vimBackupDirL                 = $null
+$GLOBAL:vimLcl                        = $null
+$GLOBAL:vimLclL                       = $null
 $GLOBAL:vimprofile                    = $null
 $GLOBAL:vimprofileL                   = $null
 $GLOBAL:vimProfileDir                 = $null
@@ -654,6 +660,14 @@ function colorcheck { # {{{
         write-Host  -BackgroundColor  $_ -NoNewLine  $( $f2 -f $_      )
         write-Host                                   " ]"
     }
+} # }}}
+
+function remote2maggi { # {{{
+    $s1 = "$cReturn$newline"
+    $s2 = "${s1}iex C:\doc\WindowsPowerShell\Microsoft.PowerShell_profile.ps1$s1"
+    Write-Host -ForegroundColor Green "$s2"
+    $s3 = 'etsn -computername magdalene -credential magdalene\nomad'
+    iex $s3
 } # }}}
 
 function remote2desales { # {{{
@@ -1492,6 +1506,75 @@ function ttff { # {{{
         bs2s "$sundryTmpD/$prefix.cointoss"
 } # }}}
 
+function sha1 { # {{{
+    #
+    # generate SHA1 sum
+    #
+    $caught = 0
+    $m = @()
+    $m+= $newline
+    $m+= 'OUCH<sha1>:[ sha1 $argstring ]'
+    $m+= $newline
+    $m+= "USAGE: sha1 [ <filename> ] "
+    $m+= $newline
+    $errusage = $m -join $newline
+
+    try {
+        $argstring = nSpc $( bs2s $( qs $( [string]$args ) ) )
+
+        $prefix = usrHostTStampPid
+        $file2check = bs2s "$sundryTmpD/$prefix.cointoss"
+
+        if ( $nullstr -eq "$argstring" ) {
+            throw
+            #
+            #   head called without arguments ( In prior version )
+            #
+            $input | Out-String | Set-Content $file2check
+        }
+        elseif ( Test-Path -path $argstring -PathType leaf ) {
+            #
+            # the entire argument string is a filename
+            #
+            $file2check = $argstring
+        }
+        else {
+            #
+            # $argstring is *NOT* a file on the file system
+            #
+            $m    =  $nullstr
+            $m   +=  $newline
+            $m   +=  "OUCH<sha1>:[ $argstring  ] "
+            $m   +=  "DOES NOT APPEAR  TO  BE A  FILE."
+            $m   +=  $newline
+            Write-Host -Foregroundcolor Red $m
+            throw
+        }
+    }
+    catch   {
+        write-Host -Foregroundcolor Red $errusage
+        $caught   =  1
+    }
+
+
+    if ( 0 -eq $caught ) {
+        ## create the hash object that calculates the sha1
+        $hashMethod = [Type] "System.Security.Cryptography.SHA1"
+        $engine = $hashMethod::Create()
+
+        $fObj = get-item $file2check
+        $datastream = New-object io.streamReader $fobj.fullname
+        $octets = $engine.ComputeHash( $dataStream.BaseStream )
+        $dataStream.Close()
+        $transform = New-object System.Text.StringBuilder
+        $octets | Foreach-object {
+            [void] $transform.Append( $_.ToString("x2") )
+        }
+        $transform.ToString()
+    }
+
+} # }}}
+
 function s256 { # {{{
     #
     # generate sha256 sum
@@ -2288,12 +2371,42 @@ function generateDiary { # {{{
         $originName = $_ -replace ".*[/\\]", ""
         $originFullName = "$psDiaryRecent/$_"
         if ( Test-Path -path $originFullName -PathType leaf ) {
-            move-item $originFullName $psDiaryTwins
+            try {
+                move-item $originFullName $psDiaryTwins
+            }
+            catch {
+                $m = @()
+                $m+= $newline
+                $m+= 'OUCH<generateDiary 67BB859D>: Move Duplicate Failed'
+                $m+= $newline
+                $m+= "move-item $originFullName $psDiaryTwins"
+                $m+= $newline
+                $m+= "**LOOKS LIKE IT FAILED. NOT SURE WHY**"
+                $m+= $newline
+                $errmsg = $m -join $newline
+                write-Host -Foregroundcolor Red $errmsg
+                move-item $originFullName "$psDiaryTwins/$(rndx32bit).$originFullName"
+            }
         }
         else {
             $originFullName = "$psDiaryArchive/$_"
             if ( Test-Path -path $originFullName -PathType leaf ) {
-                move-item $originFullName $psDiaryTwins
+                try {
+                    move-item $originFullName $psDiaryTwins
+                }
+                catch {
+                    $m = @()
+                    $m+= $newline
+                    $m+= 'OUCH<generateDiary 118ED662>: Move Duplicate Failed'
+                    $m+= $newline
+                    $m+= "move-item $originFullName $psDiaryTwins"
+                    $m+= $newline
+                    $m+= "**LOOKS LIKE IT FAILED. NOT SURE WHY**"
+                    $m+= $newline
+                    $errmsg = $m -join $newline
+                    write-Host -Foregroundcolor Red $errmsg
+                    move-item $originFullName "$psDiaryTwins/$(rndx32bit).$originFullName"
+                }
             }
         }
     }
@@ -4287,17 +4400,21 @@ function treekly { #{{{
         #
         $inpArgs += "."
     }
-    treeKlym.exe $inpArgs[ 0 ] $logfname $errfname
+    $cmd = 'C:/Users/nomad/00/cs/treeklym/treeklym/treeklym/obj/x64/Release/treeklym.exe'
+    $cmd = "$cmd " + $inpArgs[ 0 ] 
+    $cmd = "$cmd $logfname $errfname"
+    echo $cmd
+    invoke-Expression $cmd
     #
     #--------------------------------------------------------vv
-    $pattern = [regex] '(?six: \A (?x: \S+\s+ ){3} (.+) \z)'
+    #$pattern = [regex] '(?six: \A (?x: \S+\s+ ){3} (.+) \z)'
     #--------------------------------------------------------^a
     #
     # sort resulting file by full path name
     # points to the part of the pattern
     # that the sort coallates against
     #
-    C:/Windows/SUA/common/sort.exe -o $srtfname -k 4 $logfname
+    #C:/Windows/SUA/common/sort.exe -o $srtfname -k 4 $logfname
     # Get-content $logfname |
     # Sort-Object {
     # if ( $_ -match $pattern ) {
@@ -4305,7 +4422,8 @@ function treekly { #{{{
     # }
     # } > $srtfname
     #
-    bs2s $srtfname
+    #bs2s $srtfname
+    bs2s $logfname
 } # }}}
 
 function lslr2xml { # {{{
@@ -4866,17 +4984,22 @@ function pkpath { # {{{
     PATH
     $din
     $bin
+    $droid/sdk/platform-tools
+    $pfx/dotnet
     $sqlite
     $adb
     $sysinternals
     $bin/JetBrains/PyCharm/bin
     $bin/WingIDE5.x/bin
     $bin/7Zip
+    $bin/Neovim/bin
     $bin/Vim/$vimVersion
     $bin/PuTTY
     $bin/jdk1.8.0.40/bin
     $abwL/eclipse
     $abwL/sdk/platform-tools
+    $j7d
+    $ekd
     $pfdL/firefox
     $spc/bin
     $sby/bin
@@ -4885,17 +5008,13 @@ function pkpath { # {{{
     $pyd/Lib
     $pyd/Tools/Scripts
     $pyd/Scripts
-    $win/system32
+    $sys32
     $win
-    $win/System32/Wbem
-    $win/system32/WindowsPowerShell/v1.0
+    $sys32/Wbem
+    $sys32/WindowsPowerShell/v1.0
     $pfdL/QuickTime/QTSystem
     $pfxL/Common Files/Microsoft Shared/Windows Live
     $pfdL/Common Files/Microsoft Shared/Windows Live
-    $win/system32
-    $win
-    $win/System32/Wbem
-    $win/System32/WindowsPowerShell/v1.0
     $pfdL/Windows Live/Shared
     $bin/WIDCOMMbluetooth
     $bin/WIDCOMMbluetooth/syswow64
@@ -5337,9 +5456,12 @@ sow sby     "C:/strwbry/perl"
 sow mgw     "C:/MinGW"
 sow mgw     "C:/mingw64"
 sow sqlite  "C:/sqlite"
+sow droid   "C:/bin/Android"
 sow bin     "C:/bin"
 sow din     "C:/users/ksk/bin"
 sow pyd     "C:/Py35"
+sow j7d     "C:/jdk7/w64/bin"
+sow ekd     "C:/eklypz/w64"
 sow dyd     "C:/Android/android-sdk"
 sow abw     "C:/adt-bundle-windows-x86_64-20130219"
 sow xbn     "C:/system/xbin"
@@ -5352,11 +5474,13 @@ $ENV:dbx = $dbxL
 
 switch -regex ( $localhost ) { # {{{
   '(?six: \A (FultonJSheen) | (Desales) | (Azariah) | (Magdalene) \z )' {
+    #sow vimLcl ( ,"$homeLclDsk/nomad" )
     sow VIM "$homeLclDsk/bin/vim"
     sow VIMRUNTIME "$VIM/$vimVersion"
   }
 
   default {
+    #sow VIMLCL ( ,"$homeLcl" )
     sow VIM "$pfd/Vim"
     sow VIMRUNTIME "$VIM/$vimVersion"
   }
@@ -5402,5 +5526,5 @@ if ( -not ( Test-Path -path $psDiaryXmlFile -PathType Leaf ) )
     generateDiary
 } # }}}
 loadAllSavedCommands
-
+Set-PSReadlineOption -TokenKind String -ForegroundColor Cyan
 $GLOBAL:ACTIVATE_PROMPT = $true
