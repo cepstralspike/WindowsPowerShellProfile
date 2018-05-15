@@ -237,7 +237,6 @@ $GLOBAL:JAVA_HOME                     = $null
 $GLOBAL:JRE_HOME                      = $null
 $GLOBAL:CLASSPATH                     = $null
 $GLOBAL:JRE8_64                       = $null
-$GLOBAL:JRE7_64                       = $null
 $GLOBAL:ECLIPSE_HOME                  = $null
 $GLOBAL:SMARTGIT_JAVA_HOME            = $null
 $GLOBAL:adb                           = $null
@@ -247,6 +246,8 @@ $GLOBAL:doesNotExist                  = $null
 $GLOBAL:doesNotExistL                 = $null
 $GLOBAL:oracle                        = $null
 $GLOBAL:oracleL                       = $null
+$GLOBAL:droid                         = $null
+$GLOBAL:droidL                        = $null
 #
 #
 # set up regular expressions and substitutions to manage
@@ -424,13 +425,14 @@ Set-Alias   -scope global -name   cp            -value   "xcp"                  
 set-Alias   -scope global -name   rm            -value   "xrm"                  -force  -Option Allscope
 Set-Alias   -scope global -name   mv            -value   "xmv"                  -force  -Option Allscope
 Set-Alias   -scope global -name   gc            -value   "xgc"                  -force  -Option Allscope
-Set-Alias   -scope global -name   zz            -value   "7z.exe"               -force  -Option Allscope
+Set-Alias   -scope global -name   zz            -value   "xzz"                  -force  -Option Allscope
 Set-Alias   -scope global -name   ?             -value   "where.exe"            -force  -Option Allscope
 Set-Alias   -scope global -name   rr            -value   "InvokeDiaryCommand"   -force -Option Allscope
 Set-Alias   -scope global -name   r             -value   "InvokeDiaryCommand"   -force -Option Allscope
 Set-Alias   -scope global -name   h             -value   "__displayDiary"       -force -Option Allscope
 Set-Alias   -scope global -name   xxr           -value   "ForbidDiaryCommand"   -force -Option Allscope
-Set-Alias   -scope global -name   ij            -value   "C:/bin/JetBrains/IntelliJ.IDEA2017.1.1/bin/idea64.exe" -force -Option Allscope
+Set-Alias   -scope global -name   ij            -value   "idea64.exe"           -force -Option Allscope
+Set-Alias   -scope global -name   idea          -value   "idea64.exe"           -force -Option Allscope
 Remove-Item alias:ls
 #
 # }}}
@@ -664,7 +666,7 @@ function colorcheck { # {{{
 
 function remote2maggi { # {{{
     $s1 = "$cReturn$newline"
-    $s2 = "${s1}iex C:\doc\WindowsPowerShell\Microsoft.PowerShell_profile.ps1$s1"
+    $s2 = "${s1}ipmo C:\doc\WindowsPowerShell\PowerShell4Import.psm1$s1"
     Write-Host -ForegroundColor Green "$s2"
     $s3 = 'etsn -computername magdalene -credential magdalene\nomad'
     iex $s3
@@ -672,7 +674,7 @@ function remote2maggi { # {{{
 
 function remote2desales { # {{{
     $s1 = "$cReturn$newline"
-    $s2 = "${s1}iex ${dollar}HOME\Documents\WindowsPowerShell\Microsoft.PowerShell_profile.ps1$s1"
+    $s2 = "${s1}ipmo C:\doc\WindowsPowerShell\PowerShell4Import.psm1$s1"
     Write-Host -ForegroundColor Green "$s2"
     $s3 = 'etsn -computername desales -credential desales\nomad'
     iex $s3
@@ -680,7 +682,7 @@ function remote2desales { # {{{
 
 function remote2fjs { # {{{
     $s1 = "$cReturn$newline"
-    $s2 = "${s1}iex ${dollar}HOME\Documents\WindowsPowerShell\Microsoft.PowerShell_profile.ps1$s1"
+    $s2 = "${s1}ipmo C:\doc\WindowsPowerShell\PowerShell4Import.psm1$s1"
     Write-Host -ForegroundColor Green $s2
     $s3 = 'etsn -computername fultonjsheen -credential fultonjsheen\ksk'
     iex $s3
@@ -1090,6 +1092,14 @@ function xcp { # {{{
     #
     $argsPrime = enspaceArgs @args
     copy-item @argsPrime
+} # }}}
+
+function xzz { # {{{
+    #
+    # an alias of zz gets me here
+    #
+    $argsPrime = enspaceArgs @args
+    7z.exe @argsPrime
 } # }}}
 
 function createTmpFolder { # {{{
@@ -2041,7 +2051,7 @@ function appendRecentEntries2Diary { # {{{
         $epoch = $referenceFile.LastWriteTime
     } # }}}
     set-location $psDiaryRecent
-    Get-ChildItem *.pshcmd.xml         |
+    Get-ChildItem *.pshcmd.xml  |
     sort-object LastWriteTime   |
     foreach {
         #
@@ -2055,25 +2065,53 @@ function appendRecentEntries2Diary { # {{{
             $lastStamp =  $GLOBAL:diary[ $lastIndex ].stamp
             if ( $_.lastwritetime -gt $epoch )
             { # {{{
+                $histobj = $null
+                $GLOBAL:ErrorActionPreference = "SilentlyContinue"
+                $GLOBAL:DebugPreference = "SilentlyContinue"
                 $histobj = import-clixml $_
-                try {
-                    $diaryRecord = [pscustomobject]@{
-                                 stamp = $histobj.StartExecutionTime.ticks.tostring()
-                           commandline = $histobj.commandline
-                                origin = $_.name
+                $GLOBAL:ErrorActionPreference = "Inquire"
+                $GLOBAL:DebugPreference = "Inquire"
+                if ( $histobj -ne $null ) {
+                    try {
+                        $diaryRecord = [pscustomobject]@{
+                                     stamp = $histobj.StartExecutionTime.ticks.tostring()
+                               commandline = $histobj.commandline
+                                    origin = $_.name
+                        }
+                        if ( $diaryRecord.stamp -gt $lastStamp )
+                        { # {{{
+                            $GLOBAL:diary += ,( $diaryRecord )
+                        } # }}}
                     }
-                    if ( $diaryRecord.stamp -gt $lastStamp )
-                    { # {{{
-                        $GLOBAL:diary += ,( $diaryRecord )
-                    } # }}}
+                    catch {
+                        $msg = "OUCH:<appendRecentEntries2Diary>"
+                        $msg += "$cReturn$newline"
+                        $msg += "$cReturn$newline"
+                        $msg += "[ $_.fullname ] "
+                        $msg += "$cReturn$newline"
+                        $msg += "$cReturn$newline"
+                        $msg += "APPEARS TO HAVE A PROBLEM"
+                        Write-Host
+                        Write-Host -ForegroundColor Red $msg
+                        Write-Host
+                        llff $_.fullname
+                    }
                 }
-                catch {
-                    $msg = "OUCH:<appendRecentEntries2Diary>[ $_.fullname ] "
+                else {
+                    $msg = "OUCH:<appendRecentEntries2Diary>"
+                    $msg += "$cReturn$newline"
+                    $msg += "$cReturn$newline"
+                    $msg += "[ $_.fullname ] "
+                    $msg += "$cReturn$newline"
+                    $msg += "$cReturn$newline"
                     $msg += "APPEARS TO HAVE A PROBLEM"
                     Write-Host
                     Write-Host -ForegroundColor Red $msg
                     Write-Host
+                    llff $_.fullname
                 }
+                $GLOBAL:ErrorActionPreference = "Inquire"   # Other setting == "SilentlyContinue"
+                $GLOBAL:DebugPreference = "Inquire"         # Other setting == "SilentlyContinue"
             } # }}}
         }
     }
@@ -3730,7 +3768,7 @@ function vsenv { # {{{
     $pfdL/Microsoft SDKs/Windows/v10.0A/bin/NETFX 4.6 Tools
     $pyd/Scripts
     $pyd
-    C:/ProgramData/Oracle/Java/javapath
+    $prgdat/Oracle/Java/javapath
     $pfxL/Common Files/Microsoft Shared/Windows Live
     $pfdL/Common Files/Microsoft Shared/Windows Live
     $win/SYSTEM32
@@ -4990,12 +5028,15 @@ function pkpath { # {{{
     $adb
     $sysinternals
     $bin/JetBrains/PyCharm/bin
+    $bin/JetBrains/IntelliJ.IDEA.2018/bin
     $bin/WingIDE5.x/bin
     $bin/7Zip
     $bin/Neovim/bin
+    $bin/kotlinc/bin
     $bin/Vim/$vimVersion
     $bin/PuTTY
-    $bin/jdk1.8.0.40/bin
+    $pfd/Google/Chrome/Application
+    $JAVA_HOME/bin
     $abwL/eclipse
     $abwL/sdk/platform-tools
     $j7d
@@ -5029,7 +5070,9 @@ function pkpath { # {{{
     $git
     $gitubin
     $bin/SmartGit/bin
+    $bin/AZARDI.epub.reader
     $bin/qchat
+    $bin/posh-gvm
 "@
     ingest $heredoc
     pkp5
@@ -5205,6 +5248,11 @@ function gfcommit { # {{{
     $cmd2run = "git commit -m$doublequote$tag$doublequote $args"
     Invoke-Expression $cmd2run
 } # }}}
+
+function takenap {
+    $cmd2run = "rundll32.exe powrprof.dll,SetSuspendState Hibernate"
+    Invoke-Expression $cmd2run
+}
 ###############################################################################################################
 #################################################                ##############################################
 #################################################  MAIN PROGRAM  ##############################################
@@ -5497,7 +5545,7 @@ $GLOBAL:bzipexe = shortnamequiet "$git/bzip2.exe"
 
 ePlant git_editor $gooeyvimexe
 
-sow JAVA_HOME "$bin/jdk1.8.0_131"
+sow JAVA_HOME "$bin/jdk1.8.0_162"
 sow JRE_HOME  "$JAVA_HOME/jre"
 sow CLASSPATH $(sunder "$JAVA_HOME/lib;$JRE_HOME/lib")
 sow JRE8_64   $JRE_HOME
@@ -5527,4 +5575,9 @@ if ( -not ( Test-Path -path $psDiaryXmlFile -PathType Leaf ) )
 } # }}}
 loadAllSavedCommands
 Set-PSReadlineOption -TokenKind String -ForegroundColor Cyan
+$GLOBAL:ErrorActionPreference = "SilentlyContinue"
+$GLOBAL:DebugPreference = "SilentlyContinue"
+Import-Module $bin/posh-gvm/posh-gvm.psm1
+$GLOBAL:ErrorActionPreference = "Inquire"
+$GLOBAL:DebugPreference = "Inquire"
 $GLOBAL:ACTIVATE_PROMPT = $true
